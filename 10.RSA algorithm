@@ -1,0 +1,57 @@
+def trial_division(n):
+    """ Return the prime factors of the given number n """
+    factors = []
+    # Check for the smallest possible factor 2
+    while n % 2 == 0:
+        factors.append(2)
+        n //= 2
+    # Check for all odd factors from 3 onwards
+    for i in range(3, int(n**0.5) + 1, 2):
+        while n % i == 0:
+            factors.append(i)
+            n //= i
+    # If n is still a prime number and greater than 2
+    if n > 2:
+        factors.append(n)
+    return factors
+
+def compute_phi(p, q):
+    """ Compute phi(n) given p and q """
+    return (p - 1) * (q - 1)
+
+def extended_gcd(a, b):
+    """ Extended Euclidean Algorithm to find the GCD and the coefficients """
+    if a == 0:
+        return b, 0, 1
+    gcd, x1, y1 = extended_gcd(b % a, a)
+    x = y1 - (b // a) * x1
+    y = x1
+    return gcd, x, y
+
+def mod_inverse(e, phi):
+    """ Find the modular inverse of e modulo phi using the Extended Euclidean Algorithm """
+    gcd, x, y = extended_gcd(e, phi)
+    if gcd != 1:
+        raise Exception('The modular inverse does not exist')
+    return x % phi
+
+# Given public key components
+e = 31
+n = 3599
+
+# Step 1: Factorize n
+factors = trial_division(n)
+p, q = factors[0], factors[1]
+print(f"Prime factors of n: p = {p}, q = {q}")
+
+# Step 2: Compute phi(n)
+phi_n = compute_phi(p, q)
+print(f"phi(n) = {phi_n}")
+
+# Step 3: Find the modular inverse of e
+d = mod_inverse(e, phi_n)
+print(f"Private key d = {d}")
+
+# Display results
+print(f"Public key (e, n): ({e}, {n})")
+print(f"Private key (d): {d}")

@@ -1,0 +1,84 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+#define ALPHABET_SIZE 26
+
+// Function to count letter frequencies in a string
+void count_letter_frequencies(char *text, int *freq) {
+    int i;
+    int len = strlen(text);
+
+    for (i = 0; i < len; i++) {
+        char c = toupper(text[i]);
+        if (isalpha(c)) {
+            freq[c - 'A']++;
+        }
+    }
+}
+
+// Function to calculate frequency percentage of letters
+void calculate_frequency_percent(int *freq, double *percent) {
+    int i, total = 0;
+    for (i = 0; i < ALPHABET_SIZE; i++) {
+        total += freq[i];
+    }
+
+    if (total == 0) return; // Avoid division by zero
+
+    for (i = 0; i < ALPHABET_SIZE; i++) {
+        percent[i] = (double)freq[i] / total * 100.0;
+    }
+}
+
+// Function to perform letter frequency attack on a ciphertext
+void letter_frequency_attack(char *ciphertext, int top_n) {
+    int i, j;
+    int len = strlen(ciphertext);
+    int freq[ALPHABET_SIZE] = {0};
+    double percent[ALPHABET_SIZE] = {0.0};
+    char decrypted_text[len + 1];
+    int max_freq_index;
+
+    count_letter_frequencies(ciphertext, freq);
+    calculate_frequency_percent(freq, percent);
+
+    // Find the most likely key by assuming 'E' (most frequent letter in English) maps to 'E' after decryption
+    max_freq_index = 4; // Index of 'E' in English alphabet ('E' is most frequent)
+
+    // Decrypt using the found key and print the top n possible plaintexts
+    printf("Most likely plaintexts:\n");
+    for (j = 0; j < top_n; j++) {
+        for (i = 0; i < len; i++) {
+            char c = ciphertext[i];
+            if (isalpha(c)) {
+                char decrypted_char = 'A' + ((c - 'A' - max_freq_index + ALPHABET_SIZE) % ALPHABET_SIZE);
+                decrypted_text[i] = decrypted_char;
+            } else {
+                decrypted_text[i] = c; // Copy non-alphabetic characters as they are
+            }
+        }
+        decrypted_text[len] = '\0'; // Null-terminate the decrypted text
+        printf("%s\n", decrypted_text);
+        
+        // Adjust key assumption for next iteration
+        max_freq_index = (max_freq_index + 1) % ALPHABET_SIZE;
+    }
+}
+
+int main() {
+    char ciphertext[1000];
+    int top_n;
+
+    printf("Enter the ciphertext: ");
+    fgets(ciphertext, sizeof(ciphertext), stdin);
+    ciphertext[strcspn(ciphertext, "\n")] = '\0'; // Remove newline character if present
+
+    printf("Enter the number of top possible plaintexts to generate: ");
+    scanf("%d", &top_n);
+
+    letter_frequency_attack(ciphertext, top_n);
+
+    return 0;
+}

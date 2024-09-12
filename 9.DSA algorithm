@@ -1,0 +1,52 @@
+from hashlib import sha1
+from random import SystemRandom
+
+# Helper functions
+def modinv(a, m):
+    # Extended Euclidean Algorithm to find the modular inverse
+    m0, x0, x1 = m, 0, 1
+    if m == 1:
+        return 0
+    while a > 1:
+        q = a // m
+        m, a = a % m, m
+        x0, x1 = x1 - q * x0, x0
+    if x1 < 0:
+        x1 += m0
+    return x1
+
+def hash_message(message):
+    return int(sha1(message.encode('utf-8')).hexdigest(), 16)
+
+# DSA parameters (for simplicity, using small numbers; in practice, these should be large primes)
+p = 8831
+q = 883
+g = 565
+
+# Key generation
+x = SystemRandom().randrange(1, q)  # Private key
+y = pow(g, x, p)  # Public key
+
+# Message to be signed
+message = "Hello, world!"
+hashed_message = hash_message(message)
+
+# Signature generation
+k = SystemRandom().randrange(1, q)
+r = pow(g, k, p) % q
+s = (modinv(k, q) * (hashed_message + x * r)) % q
+
+print("Message:", message)
+print("Signature (r, s):", (r, s))
+
+# Signature verification
+def verify_signature(message, r, s, p, q, g, y):
+    hashed_message = hash_message(message)
+    w = modinv(s, q)
+    u1 = (hashed_message * w) % q
+    u2 = (r * w) % q
+    v = ((pow(g, u1, p) * pow(y, u2, p)) % p) % q
+    return v == r
+
+is_valid = verify_signature(message, r, s, p, q, g, y)
+print("Signature valid:", is_valid)

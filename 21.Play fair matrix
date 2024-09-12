@@ -1,0 +1,105 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+// Function to prepare the plaintext for encryption (handle 'J' and padding)
+void preparePlainText(char *text) {
+    int i;
+
+    // Convert all characters to uppercase
+    for (i = 0; i < strlen(text); i++) {
+        text[i] = toupper(text[i]);
+    }
+
+    // Replace 'J' with 'I'
+    for (i = 0; i < strlen(text); i++) {
+        if (text[i] == 'J') {
+            text[i] = 'I';
+        }
+    }
+
+    // Remove any characters that are not uppercase letters
+    int index = 0;
+    for (i = 0; i < strlen(text); i++) {
+        if (isupper(text[i])) {
+            text[index++] = text[i];
+        }
+    }
+    text[index] = '\0';
+
+    // Pad with 'X' if the length is odd
+    if (strlen(text) % 2 != 0) {
+        strcat(text, "X");
+    }
+}
+
+// Function to find the positions of two characters in the Playfair matrix
+void findPosition(char matrix[5][5], char ch, int *row, int *col) {
+    if (ch == 'J') ch = 'I'; // 'J' and 'I' are considered the same in Playfair
+
+    int i, j;
+    for (i = 0; i < 5; i++) {
+        for (j = 0; j < 5; j++) {
+            if (matrix[i][j] == ch) {
+                *row = i;
+                *col = j;
+                return;
+            }
+        }
+    }
+}
+
+// Function to encrypt the plaintext using the Playfair cipher
+void playfairEncrypt(char matrix[5][5], char *plaintext, char *ciphertext) {
+    int i;
+    for (i = 0; i < strlen(plaintext); i += 2) {
+        char ch1 = plaintext[i];
+        char ch2 = plaintext[i + 1];
+
+        int r1, c1, r2, c2;
+        findPosition(matrix, ch1, &r1, &c1);
+        findPosition(matrix, ch2, &r2, &c2);
+
+        if (r1 == r2) {
+            // Same row
+            ciphertext[i] = matrix[r1][(c1 + 1) % 5];
+            ciphertext[i + 1] = matrix[r1][(c2 + 1) % 5];
+        } else if (c1 == c2) {
+            // Same column
+            ciphertext[i] = matrix[(r1 + 1) % 5][c1];
+            ciphertext[i + 1] = matrix[(r2 + 1) % 5][c1];
+        } else {
+            // Form a rectangle
+            ciphertext[i] = matrix[r1][c2];
+            ciphertext[i + 1] = matrix[r2][c1];
+        }
+    }
+    ciphertext[strlen(plaintext)] = '\0';
+}
+
+int main() {
+    char matrix[5][5] = {
+        {'M', 'F', 'H', 'I', 'K'},
+        {'U', 'N', 'O', 'P', 'Q'},
+        {'Z', 'V', 'W', 'X', 'Y'},
+        {'E', 'L', 'A', 'R', 'G'},
+        {'D', 'S', 'T', 'B', 'C'}
+    };
+
+    char plaintext[] = "Must see you over Cadogan West. Coming at once.";
+    char preparedText[100];
+    char ciphertext[100];
+
+    // Prepare plaintext
+    strcpy(preparedText, plaintext);
+    preparePlainText(preparedText);
+
+    // Encrypt using Playfair cipher
+    playfairEncrypt(matrix, preparedText, ciphertext);
+
+    // Print the encrypted ciphertext
+    printf("Original message:\n%s\n\n", plaintext);
+    printf("Encrypted message:\n%s\n", ciphertext);
+
+    return 0;
+}

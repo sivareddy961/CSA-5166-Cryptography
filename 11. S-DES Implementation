@@ -1,0 +1,92 @@
+def permute(bits, table):
+    return [bits[i] for i in table]
+
+def shift(bits, n):
+    return bits[n:] + bits[:n]
+
+def xor(bits1, bits2):
+    return [b1 ^ b2 for b1, b2 in zip(bits1, bits2)]
+
+def sbox(input_bits, sbox):
+    row = input_bits[0] * 2 + input_bits[3]
+    col = input_bits[1] * 2 + input_bits[2]
+    output = sbox[row][col]
+    return [int(x) for x in format(output, '02b')]
+
+def generate_subkeys(key):
+    P10 = [2, 4, 1, 6, 3, 9, 0, 8, 7, 5]
+    P8 = [5, 2, 6, 3, 7, 4, 9, 8]
+    
+    key = permute(key, P10)
+    left, right = key[:5], key[5:]
+    
+    left, right = shift(left, 1), shift(right, 1)
+    K1 = permute(left + right, P8)
+    
+    left, right = shift(left, 2), shift(right, 2)
+    K2 = permute(left + right, P8)
+    
+    return K1, K2
+
+def f_k(bits, subkey):
+    EP = [3, 0, 1, 2, 1, 2, 3, 0]
+    S0 = [[1, 0, 3, 2],
+          [3, 2, 1, 0],
+          [0, 2, 1, 3],
+          [3, 1, 3, 2]]
+    S1 = [[0, 1, 2, 3],
+          [2, 0, 1, 3],
+          [3, 0, 1, 0],
+          [2, 1, 0, 3]]
+    P4 = [1, 3, 2, 0]
+    
+    left, right = bits[:4], bits[4:]
+    
+    temp = permute(right, EP)
+    temp = xor(temp, subkey)
+    
+    s0_output = sbox(temp[:4], S0)
+    s1_output = sbox(temp[4:], S1)
+    
+    output = permute(s0_output + s1_output, P4)
+    
+    return xor(left, output) + right
+
+def sdes_encrypt_block(plaintext, subkeys):
+    IP = [1, 5, 2, 0, 3, 7, 4, 6]
+    IP_inv = [3, 0, 2, 4, 6, 1, 7, 5]
+    
+    bits = permute(plaintext, IP)
+    bits = f_k(bits, subkeys[0])
+    bits = bits[4:] + bits[:4]  # Switch (SW)
+    bits = f_k(bits, subkeys[1])
+    
+    ciphertext = permute(bits, IP_inv)
+    return ciphertext
+
+def sdes_decrypt_block(ciphertext, subkeys):
+    IP = [1, 5, 2, 0, 3, 7, 4, 6]
+    IP_inv = [3, 0, 2, 4, 6, 1, 7, 5]
+    
+    bits = permute(ciphertext, IP)
+    bits = f_k(bits, subkeys[1])
+    bits = bits[4:] + bits[:4]  # Switch (SW)
+    bits = f_k(bits, subkeys[0])
+    
+    plaintext = permute(bits, IP_inv)
+    return plaintext
+
+# Test S-DES encryption and decryption
+key = [0, 1, 1, 1, 1, 1, 1, 0, 1, 1]  # Example key
+plaintext = [0, 0, 0, 1, 0, 0, 0, 0]  # Example plaintext
+
+# Generate subkeys
+subkeys = generate_subkeys(key)
+
+# Encrypt
+ciphertext = sdes_encrypt_block(plaintext, subkeys)
+print("Ciphertext:", ciphertext)
+
+# Decrypt
+decrypted_plaintext = sdes_decrypt_block(ciphertext, subkeys)
+print("Decrypted Plaintext:", decrypted_plaintext)

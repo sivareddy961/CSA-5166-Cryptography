@@ -1,0 +1,78 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+// Key matrix K
+int keyMatrix[2][2] = {{9, 4}, {5, 7}};
+
+// Function to prepare the plaintext for encryption (remove spaces and pad if necessary)
+void preparePlainText(char *text) {
+    int i;
+    int len = strlen(text);
+
+    // Convert all characters to uppercase
+    for (i = 0; i < len; i++) {
+        text[i] = toupper(text[i]);
+    }
+
+    // Remove spaces and punctuation
+    int index = 0;
+    for (i = 0; i < len; i++) {
+        if (isalpha(text[i])) {
+            text[index++] = text[i];
+        }
+    }
+    text[index] = '\0';
+
+    // Pad with 'X' if the length is odd
+    if (strlen(text) % 2 != 0) {
+        strcat(text, "X");
+    }
+}
+
+// Function to encrypt the plaintext using Hill cipher
+void hillEncrypt(char *plaintext, char *ciphertext) {
+    int len = strlen(plaintext);
+    int i, j, k;
+    int pair[2], result[2];
+
+    for (i = 0; i < len; i += 2) {
+        // Convert current pair of characters to numerical values
+        pair[0] = plaintext[i] - 'A';
+        pair[1] = plaintext[i + 1] - 'A';
+
+        // Matrix multiplication
+        for (j = 0; j < 2; j++) {
+            result[j] = 0;
+            for (k = 0; k < 2; k++) {
+                result[j] += keyMatrix[j][k] * pair[k];
+            }
+            result[j] %= 26; // Modulo 26 operation
+        }
+
+        // Convert numerical values back to characters
+        ciphertext[i] = result[0] + 'A';
+        ciphertext[i + 1] = result[1] + 'A';
+    }
+    ciphertext[len] = '\0';
+}
+
+int main() {
+    char plaintext[] = "meet me at the usual place at ten rather than eight oclock";
+    char preparedText[100];
+    char ciphertext[100];
+
+    // Prepare plaintext
+    strcpy(preparedText, plaintext);
+    preparePlainText(preparedText);
+
+    // Encrypt using Hill cipher
+    hillEncrypt(preparedText, ciphertext);
+
+    // Print the original message and encrypted ciphertext
+    printf("Original message:\n%s\n\n", plaintext);
+    printf("Encrypted message:\n%s\n", ciphertext);
+
+    return 0;
+}
